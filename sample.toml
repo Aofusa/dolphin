@@ -1,0 +1,68 @@
+# sample.toml
+# デプロイツール Dolphin のサンプル
+
+
+# dolphin 実行マシンから転送するファイル
+# path: ローカルから転送したいファイル
+# to: リモートの転送先パス
+[[file]]
+path = "path/to/file"
+to   = "/path/to/destination"
+
+# file は複数指定可能
+[[file]]
+path = "path/to/other_file"
+to   = "/path/to/other_destination"
+
+# dolphin 実行マシンから target までの経路となる踏み台マシン
+# 複数指定された場合、上から順番に多段 SSH を実施します。
+# host: 踏み台のアドレス
+# port: 接続先 SSH ポート
+# user: 踏み台へのログインユーザ。指定されなかった場合実行中に入力プロンプトが表示される。
+# password: 踏み台へのログインパスワード。指定されなかった場合実行中に入力プロンプトが表示される。
+[[proxy]]
+host = "192.168.1.10"
+port = "22"
+user = "user"
+password = "password"
+
+[[proxy]]
+host = "172.23.1.10"
+port = "22"
+
+# デプロイ先のターゲットマシン。 command を順次実行していく。
+# command が途中で失敗した場合、そこで処理を中断する。
+# また、rollback オプションを指定することで command の代わりに rollback で指定した処理が
+# 実行される。
+# host: ターゲットマシンのアドレス
+# port: ターゲットマシンのポート
+# user: ターゲットマシンログインユーザ。省力した場合入力プロンプトが表示される。
+# password: ターゲットマシンのログインパスワード。省力した場合入力プロンプトが表示される。
+# command: ターゲットマシン上で実行するコマンド。上から順番に実行される。
+# rollback: rollback オプションが指定された場合に command の代わりに実行される。
+# また、failback オプションが指定された場合、 command の実行途中で失敗した場合に自動的に実行される
+[[target]]
+host = "10.1.1.10"
+port = "22"
+user = "user"
+password = "password"
+command = [
+    "hostname",
+    "uname -a",
+]
+rollback = [
+    "who",
+]
+
+[[target]]
+host = "10.1.1.20"
+port = "22"
+user = "user"
+password = "password"
+command = [
+    "pwd",
+]
+rollback = [
+    "ls",
+]
+
