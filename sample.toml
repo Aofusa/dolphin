@@ -19,6 +19,7 @@ to   = "/path/to/other_destination"
 # host: 踏み台のアドレス
 # port: 接続先 SSH ポート
 # user: 踏み台へのログインユーザ。指定されなかった場合実行中に入力プロンプトが表示される。
+# key: 踏み台への鍵認証に使用する鍵。指定されなかった場合パスワード認証方式になります。
 # password: 踏み台へのログインパスワード。指定されなかった場合実行中に入力プロンプトが表示される。
 [[proxy]]
 host = "192.168.1.10"
@@ -28,7 +29,11 @@ password = "password"
 
 [[proxy]]
 host = "172.23.1.10"
-port = "22"
+
+[[proxy]]
+host = "10.1.1.2"
+key  = "/path/to/.ssh/keyfile"
+
 
 # デプロイ先のターゲットマシン。 command を順次実行していく。
 # command が途中で失敗した場合、そこで処理を中断する。
@@ -37,6 +42,7 @@ port = "22"
 # host: ターゲットマシンのアドレス
 # port: ターゲットマシンのポート
 # user: ターゲットマシンログインユーザ。省力した場合入力プロンプトが表示される。
+# key: ターゲットマシンへの鍵認証に使用する鍵。指定されなかった場合パスワード認証方式になります。
 # password: ターゲットマシンのログインパスワード。省力した場合入力プロンプトが表示される。
 # command: ターゲットマシン上で実行するコマンド。上から順番に実行される。
 # rollback: rollback オプションが指定された場合に command の代わりに実行される。
@@ -48,7 +54,7 @@ user = "user"
 password = "password"
 command = [
     "hostname",
-    "uname -a",
+    "sudo uname -a",
 ]
 rollback = [
     "who",
@@ -58,6 +64,7 @@ rollback = [
 host = "10.1.1.20"
 port = "22"
 user = "user"
+key  = "/path/to/.ssh/keyfile"
 password = "password"
 command = [
     "pwd",

@@ -4,6 +4,7 @@ from fabric import Connection
 from fabric.transfer import Transfer
 from pathlib import Path
 from getpass import getpass
+import paramiko
 import shutil
 import tempfile
 
@@ -184,21 +185,66 @@ class Command():
 
         # プロキシのチェーンを作成する
         for proxy in proxies:
+            # ホストアドレス
             host = proxy["host"]
+
+            # ポート番号
             port = "22"
             if "port" in proxy:
                 port = proxy["port"]
+
+            # ユーザ名
             user = None
             if "user" in proxy:
                 user = proxy["user"]
             else:
                 user = input("LOGIN USER {}: ".format(host))
-            password = None
-            if "password" in proxy:
-                password = proxy["password"]
-            else:
-                password = getpass("LOGIN PASSWORD {}@{}: ".format(user, host))
 
+            # ログインパスワード
+            # key が指定されている場合は鍵のパスワード
+            password = None
+            if "password" in target:
+                password = target["password"]
+            else:
+                msg = "LOGIN PASSWORD {}@{}: "
+                if "key" in target:
+                    msg = "KEY PASSWORD {}@{}: "
+                password = getpass(msg.format(user, host))
+
+            # 鍵認証の鍵
+            key = None
+            if "key" in target:
+                key = target["key"]
+
+            # 接続の認証方式
+            connect_kwargs = None
+            if "key" in target:
+                # DSS・RSA・ECDSA・Ed25519 鍵の調査
+                key_list = [
+                    paramiko.DSSKey.from_private_key_file,
+                    paramiko.RSAKey.from_private_key_file,
+                    paramiko.ECDSAKey.from_private_key_file,
+                    paramiko.Ed25519Key.from_private_key_file
+                ]
+
+                pkey = None
+                # 上記鍵にマッチするものを使用する
+                for k in key_list:
+                    try:
+                        pkey = k(key, password)
+                        break
+                    except (paramiko.ssh_exception.SSHException):
+                        continue
+                
+                connect_kwargs = {
+                    "pkey": pkey
+                }
+            else:
+                connect_kwargs = {
+                    "password": password
+                }
+
+            # 接続情報の作成
             gateway = Connection(host=host,
                                  port=port,
                                  user=user,
@@ -237,31 +283,81 @@ class Command():
 
         # ターゲットの接続情報・コマンド情報を一覧化する
         for target in targets:
+            # ホストアドレス
             host = target["host"]
+
+            # ポート番号
             port = "22"
             if "port" in target:
                 port = target["port"]
+
+            # ユーザ名
             user = None
             if "user" in target:
                 user = target["user"]
             else:
                 user = input("LOGIN USER {}: ".format(host))
+
+            # ログインパスワード
+            # key が指定されている場合は鍵のパスワード
             password = None
             if "password" in target:
                 password = target["password"]
             else:
-                password = getpass("LOGIN PASSWORD {}@{}: ".format(user, host))
+                msg = "LOGIN PASSWORD {}@{}: "
+                if "key" in target:
+                    msg = "KEY PASSWORD {}@{}: "
+                password = getpass(msg.format(user, host))
+
+            # 鍵認証の鍵
+            key = None
+            if "key" in target:
+                key = target["key"]
+
+            # 実行するコマンド
             command = None
             if "command" in target:
                 command = target["command"]
+
+            # rollback 時に実行するコマンド
             rollback = None
             if "rollback" in target:
                 rollback = target["rollback"]
 
+            # 接続に使用する認証方式
+            connect_kwargs = None
+            if "key" in target:
+                # DSS・RSA・ECDSA・Ed25519 鍵の調査
+                key_list = [
+                    paramiko.DSSKey.from_private_key_file,
+                    paramiko.RSAKey.from_private_key_file,
+                    paramiko.ECDSAKey.from_private_key_file,
+                    paramiko.Ed25519Key.from_private_key_file
+                ]
+
+                pkey = None
+                # 上記鍵にマッチするものを使用する
+                for k in key_list:
+                    try:
+                        pkey = k(key, password)
+                        break
+                    except (paramiko.ssh_exception.SSHException):
+                        continue
+
+                connect_kwargs = {
+                    "pkey": pkey
+                }
+
+            else:
+                connect_kwargs = {
+                    "password": password
+                }
+
+            # 接続情報の作成
             conn = Connection(host=host,
                               port=port,
                               user=user,
-                              connect_kwargs={"password": password},
+                              connect_kwargs=connect_kwargs,
                               gateway=gateway
                             )
 
