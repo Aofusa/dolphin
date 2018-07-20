@@ -44,7 +44,7 @@ class Command():
                 arg = pool["command"]
                 # command が存在すれば実行する
                 if arg != None:
-                    result.append(command(arg))
+                    result.append(command(arg, pty=True))
 
             elif "proxy" in pool["type"]:
                 pass
@@ -78,7 +78,7 @@ class Command():
                 arg = pool["rollback"]
                 # rollback が存在すれば実行する
                 if arg != None:
-                    result.append(command(arg))
+                    result.append(command(arg, pty=True))
 
         # 各コマンドの実行結果を返す
         return result
@@ -253,10 +253,10 @@ class Command():
                 password = getpass("LOGIN PASSWORD {}@{}: ".format(user, host))
             command = None
             if "command" in target:
-                command = " && ".join(target["command"])
+                command = target["command"]
             rollback = None
             if "rollback" in target:
-                rollback = " && ".join(target["rollback"])
+                rollback = target["rollback"]
 
             conn = Connection(host=host,
                               port=port,
@@ -293,13 +293,26 @@ class Command():
             rollback = target["rollback"]
 
             # コマンドの構築
-            pool = {
-                "type": "target",
-                "run": connect.run,
-                "command": command,
-                "rollback": rollback,
-            }
+            for c in command:
+                pool = {
+                    "type": "target",
+                    "run": connect.run,
+                    "command": c,
+                    "rollback": None,
+                }
 
-            # コマンドプールに積み込み
-            self.__command_pool.append(pool)
+                # コマンドプールに積み込み
+                self.__command_pool.append(pool)
+
+            # コマンドの構築
+            for r in rollback:
+                pool = {
+                    "type": "target",
+                    "run": connect.run,
+                    "command": None,
+                    "rollback": r,
+                }
+
+                # コマンドプールに積み込み
+                self.__command_pool.append(pool)
 

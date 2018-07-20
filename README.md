@@ -115,9 +115,10 @@ port = "22"
 user = "user"
 password = "password"
 # command・rollback は複数書くことができ、上から順番に処理される
+# sudo コマンドも実行できる
 command = [
     "hostname",
-    "uname -a"
+    "sudo uname -a"
 ]
 rollback = [
     "who",
@@ -152,7 +153,6 @@ host = "10.1.1.20"
 
 # 悲しいこと
 - ディレクトリを転送する場合、ターゲットマシン上で tar コマンドが使用できない場合失敗する  
-- 対話的な処理はできない。Yes or No で聞かれるとエラーになるので yes コマンドなんかで対処してネ  
 - SSH のログイン方式はパスワード方式しかサポートしていない  
 
 
