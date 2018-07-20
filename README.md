@@ -1,4 +1,4 @@
-Dolphin - A Deploymet-tool
+Dolphin - A Deployment-tool
 ---
 
 
