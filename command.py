@@ -121,19 +121,20 @@ class Command():
             # ディレクトリが指定された場合、プログラムで圧縮しファイルにする
             if Path(local_path).is_dir():
                 dir_flag = True
-                output = Path(self.__worker_dir.name).joinpath(Path(local_path).parts[-1])
+                local_path_t = Path(local_path).name
+                output = Path(self.__worker_dir.name).joinpath(local_path_t)
                 root_dir = Path(local_path).joinpath("..")
-                base_dir = Path(local_path).parts[-1]
+                base_dir = local_path_t
                 local_path = shutil.make_archive(output,
-                                                 "tar",
-                                                 root_dir=root_dir,
-                                                 base_dir=base_dir
+                                                "tar",
+                                                root_dir=root_dir,
+                                                base_dir=base_dir
                                                 )
 
             # 送信先のパスがファイルでなかった場合、末尾に送信ファイル名を追加する
             # fabric のファイル送信の仕様
-            if Path(remote_path).parts[-1] != Path(local_path).parts[-1]:
-                remote_path = str(Path(remote_path) / Path(local_path).parts[-1])
+            if Path(remote_path).name != Path(local_path).name:
+                remote_path = str(Path(remote_path) / Path(local_path).name)
 
             # ターゲットリストの一覧全てに転送する
             for target in self.__target_list:
@@ -154,7 +155,7 @@ class Command():
                 if dir_flag == True:
                     connect = target["target"]
                     remote_dir = Path(remote_path).parent
-                    remote_file = Path(remote_path).parts[-1]
+                    remote_file = Path(remote_path).name
                     command = "cd {} && tar -xf {} && rm -rf {}".format(
                         remote_dir, remote_file, remote_file)
 
