@@ -292,27 +292,29 @@ class Command():
             command = target["command"]
             rollback = target["rollback"]
 
-            # コマンドの構築
-            for c in command:
-                pool = {
-                    "type": "target",
-                    "run": connect.run,
-                    "command": c,
-                    "rollback": None,
-                }
+            if command != None:
+                # コマンドの構築
+                for c in command:
+                    pool = {
+                        "type": "target",
+                        "run": connect.run,
+                        "command": c,
+                        "rollback": None,
+                    }
 
-                # コマンドプールに積み込み
-                self.__command_pool.append(pool)
+                    # コマンドプールに積み込み
+                    self.__command_pool.append(pool)
 
-            # コマンドの構築
-            for r in rollback:
-                pool = {
-                    "type": "target",
-                    "run": connect.run,
-                    "command": None,
-                    "rollback": r,
-                }
+            if rollback != None:
+                # コマンドの構築
+                for r in rollback:
+                    pool = {
+                        "type": "target",
+                        "run": connect.run,
+                        "command": None,
+                        "rollback": r,
+                    }
 
-                # コマンドプールに積み込み
-                self.__command_pool.append(pool)
+                    # コマンドプールに積み込み
+                    self.__command_pool.append(pool)
 
