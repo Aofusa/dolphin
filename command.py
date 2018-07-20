@@ -4,6 +4,8 @@ from fabric import Connection
 from fabric.transfer import Transfer
 from pathlib import Path
 from getpass import getpass
+import shutil
+import tempfile
 
 
 class Command():
@@ -17,6 +19,7 @@ class Command():
         """
         self.__command_pool = []  # 構築したコマンドプールの保存
         self.__target_list = []   # ターゲットの一覧
+        self.__worker_dir = tempfile.TemporaryDirectory() # 作業用一時ディレクトリ
         self.name = name
         self.data = data
         self.generate_command_pool()
@@ -110,8 +113,21 @@ class Command():
 
         # ファイル転送コマンドを構築する
         for send_file in files:
+            dir_flag = False
             local_path = send_file["path"]
             remote_path = send_file["to"]
+
+            # ディレクトリが指定された場合、プログラムで圧縮しファイルにする
+            if Path(local_path).is_dir():
+                dir_flag = True
+                output = Path(self.__worker_dir.name).joinpath(Path(local_path).parts[-1])
+                root_dir = Path(local_path).joinpath("..")
+                base_dir = Path(local_path).parts[-1]
+                local_path = shutil.make_archive(output,
+                                                 "tar",
+                                                 root_dir=root_dir,
+                                                 base_dir=base_dir
+                                                )
 
             # 送信先のパスがファイルでなかった場合、末尾に送信ファイル名を追加する
             # fabric のファイル送信の仕様
@@ -132,6 +148,25 @@ class Command():
 
                 # コマンドプールへの積み込み
                 self.__command_pool.append(pool)
+
+                # ディレクトリが指定された場合、送信先で解凍する
+                if dir_flag == True:
+                    connect = target["target"]
+                    remote_dir = Path(remote_path).parent
+                    remote_file = Path(remote_path).parts[-1]
+                    command = "cd {} && tar -xf {} && rm -rf {}".format(
+                        remote_dir, remote_file, remote_file)
+
+                    # コマンドの構築
+                    pool = {
+                        "type": "target",
+                        "run": connect.run,
+                        "command": command,
+                        "rollback": None
+                    }
+
+                    # コマンドプールへの積み込み
+                    self.__command_pool.append(pool)
 
 
     def __generate_proxy_command(self):
