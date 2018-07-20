@@ -39,7 +39,9 @@ class Command():
             if "target" in pool["type"]:
                 command = pool["run"]
                 arg = pool["command"]
-                result.append(command(arg))
+                # command が存在すれば実行する
+                if arg != None:
+                    result.append(command(arg))
 
             elif "proxy" in pool["type"]:
                 pass
@@ -71,7 +73,9 @@ class Command():
             if "target" in pool["type"]:
                 command = pool["run"]
                 arg = pool["rollback"]
-                result.append(command(arg))
+                # rollback が存在すれば実行する
+                if arg != None:
+                    result.append(command(arg))
 
         # 各コマンドの実行結果を返す
         return result
@@ -146,7 +150,9 @@ class Command():
         # プロキシのチェーンを作成する
         for proxy in proxies:
             host = proxy["host"]
-            port = proxy["port"]
+            port = "22"
+            if "port" in proxy:
+                port = proxy["port"]
             user = None
             if "user" in proxy:
                 user = proxy["user"]
@@ -197,7 +203,9 @@ class Command():
         # ターゲットの接続情報・コマンド情報を一覧化する
         for target in targets:
             host = target["host"]
-            port = target["port"]
+            port = "22"
+            if "port" in target:
+                port = target["port"]
             user = None
             if "user" in target:
                 user = target["user"]
@@ -208,8 +216,12 @@ class Command():
                 password = target["password"]
             else:
                 password = getpass("LOGIN PASSWORD {}@{}: ".format(user, host))
-            command = " && ".join(target["command"])
-            rollback = " && ".join(target["rollback"])
+            command = None
+            if "command" in target:
+                command = " && ".join(target["command"])
+            rollback = None
+            if "rollback" in target:
+                rollback = " && ".join(target["rollback"])
 
             conn = Connection(host=host,
                               port=port,
