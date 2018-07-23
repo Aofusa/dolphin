@@ -204,22 +204,22 @@ class Command():
             # ログインパスワード
             # key が指定されている場合は鍵のパスワード
             password = None
-            if "password" in target:
-                password = target["password"]
+            if "password" in proxy:
+                password = proxy["password"]
             else:
                 msg = "LOGIN PASSWORD {}@{}: "
-                if "key" in target:
+                if "key" in proxy:
                     msg = "KEY PASSWORD {}@{}: "
                 password = getpass(msg.format(user, host))
 
             # 鍵認証の鍵
             key = None
-            if "key" in target:
-                key = target["key"]
+            if "key" in proxy:
+                key = proxy["key"]
 
             # 接続の認証方式
             connect_kwargs = None
-            if "key" in target:
+            if "key" in proxy:
                 # DSS・RSA・ECDSA・Ed25519 鍵の調査
                 key_list = [
                     paramiko.DSSKey.from_private_key_file,
@@ -249,7 +249,7 @@ class Command():
             gateway = Connection(host=host,
                                  port=port,
                                  user=user,
-                                 connect_kwargs={"password": password},
+                                 connect_kwargs=connect_kwargs,
                                  gateway=gateway
                                 )
 
