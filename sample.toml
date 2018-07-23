@@ -19,9 +19,15 @@ to   = "/path/to/other_destination"
 # to: リモートの転送先パス
 # branch: Git リポジトリのブランチ ※省略した場合 master になります。
 [[repo]]
-path = "path/to/repository.git"
+path = "git@github.com:your/repository.git"
 to   = "/path/to/destination"
 branch = "master"
+
+# https・git どちらにも対応しています
+# branch を省略した場合は master ブランチを使用します
+[[repo]]
+path = "https://github.com/your/repository.git"
+to   = "/path/to/destination"
 
 
 # dolphin 実行マシンから target までの経路となる踏み台マシン

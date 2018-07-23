@@ -43,6 +43,15 @@ path: ローカルのファイルパス
 to: リモートのファイルパス  
 
 
+- repo  
+[[repo]]で記述  
+Git リポジトリをダウンロードし SFTP によるファイル転送を行います。  
+ tar に圧縮して転送するため、転送先に tar コマンドがない場合転送に失敗します  
+path: リポジトリのURL ※git@github.com/https://どちらにも対応しています  
+to: リモートのファイルパス  
+branch: Git リポジトリのブランチ ※省略した場合 master になります。
+
+
 - proxy  
 [[proxy]]で記述  
 SSH で経由する踏み台サーバを指定します  
@@ -89,6 +98,28 @@ to   = "/path/to/destination"
 [[file]]
 path = "path/to/other_file"
 to   = "/path/to/other_destination"
+```
+
+リポジトリの指定
+```toml
+[[repo]]
+path = "git@github.com:your/repository.git"
+to   = "/path/to/destination"
+branch = "master"
+```
+
+複数書くこともできる  
+その場合、全てのリポジトリがターゲットマシンにクローンされる  
+```toml
+[[repo]]
+path = "git@github.com:your/repository.git"
+to   = "/path/to/destination"
+branch = "master"
+
+# branch を省略した場合は master ブランチを使用します
+[[repo]]
+path = "https://github.com/your/repository.git"
+to   = "/path/to/destination"
 ```
 
 プロキシの指定  
