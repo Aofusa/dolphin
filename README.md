@@ -32,7 +32,9 @@ python dolphin playbook.toml [.. playbooks.toml] [--no-enter] [--parallel] [--ro
 --no-enter: プログラム実行後のキー入力待ちを無効化する  
 --parallel: 各 target へのコマンド発行を並列化する  
 --rollback: TOML に記述された command の代わりに rollback を実行する  
---failback: command の実行に失敗した場合、その地点から rollback を実行する  
+--failback: command の実行に失敗した場合、その地点から rollback を実行する。
+また、--parallelオプションが指定された時は失敗した対象のみ rollback が実行され、
+--parallel オプションが指定されなかった場合は全ての対象に対して rollback が実行されます  
 
 
 # TOML ファイルの書き方
