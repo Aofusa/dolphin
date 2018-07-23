@@ -12,6 +12,9 @@ def arg():
 
     parser = argparse.ArgumentParser(description="Dolphin - A Deploy-tool")
     parser.add_argument('file', help="dolphin config toml file", nargs="+")
+    parser.add_argument("-p", "--parallel",
+                        help="parallel run (default is sequential)",
+                        action="store_true")
     parser.add_argument("--no-enter",
                         help="exit without input Enter key", action="store_true")
     group = parser.add_mutually_exclusive_group()
@@ -77,6 +80,30 @@ def command_run(command, args):
     return result
 
 
+def command_run_parallel(command, args):
+    """
+    構築したコマンドを並列実行する
+    """
+
+    result = []
+
+    for c in command:
+        if not args.rollback:
+            try:
+                result.append(c.parallel_run())
+            except Exception as e:
+                print("[{}] \033[31m".format(c.name) + str(e) + "\033[0m")
+                if args.failback:
+                    print("[{}] failback now...".format(c.name))
+                    c.rollback()
+                # else:
+                #     raise Exception(e)
+        else:
+            result.append(c.rollback())
+
+    return result
+
+
 def main():
     """
     メイン関数
@@ -93,8 +120,14 @@ def main():
 
     # 構築したコマンドの実行
     try:
-        command_run(command, args)
+        if args.parallel:
+            # コマンドの並列実行
+            command_run_parallel(command, args)
+        else:
+            # コマンドの逐次実行
+            command_run(command, args)
     except Exception as e:
+        # エラーを赤文字で表示する
         print("\033[31m" + str(e) + "\033[0m")
     finally:
         # すぐ終了するのを防ぐためキー入力待ちにする

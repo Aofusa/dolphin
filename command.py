@@ -8,6 +8,7 @@ from getpass import getpass
 import paramiko
 import shutil
 import tempfile
+import asyncio
 
 
 class Command():
@@ -56,6 +57,85 @@ class Command():
                 local_file = pool["local"]
                 remote_file = pool["remote"]
                 result.append(command(local_file, remote_file))
+
+        # 各コマンドの実行結果を返す
+        return result
+
+
+    async def __parallel_command_runner(self, command_pool):
+        """
+        コマンドを逐次実行するためのコマンドランナー
+        """
+
+        result = []
+
+        for pool in command_pool:
+            await asyncio.sleep(0)
+            if "target" in pool["type"]:
+                command = pool["run"]
+                arg = pool["command"]
+                # command が存在すれば実行する
+                if arg != None:
+                    result.append(command(arg, pty=True))
+
+            elif "file" in pool["type"]:
+                command = pool["run"]
+                local_file = pool["local"]
+                remote_file = pool["remote"]
+                result.append(command(local_file, remote_file))
+
+        return result
+
+
+    async def __parallel_runner(self, queue):
+        """
+        並列実行ランナー
+        """
+
+        cors = []
+
+        for command_pool in queue.values():
+            cors.append(self.__parallel_command_runner(command_pool))
+
+        result = await asyncio.wait(cors)
+
+        return result
+
+
+    def parallel_run(self):
+        """
+        構築したコマンドの並列実行
+        """
+
+        result = []
+
+        # コマンドプールが空だった場合
+        # 空の配列を返す
+        if len(self.__command_pool) <= 0:
+            return result
+
+        # ターゲットリストの数だけキューを作成する
+        parallel_queue = {}
+        for target in self.__target_list:
+            host = target["target"].host
+            parallel_queue[host] = []
+
+        # 構築したコマンドをキューに入れていく
+        for pool in self.__command_pool:
+            if "target" in pool["type"] or "file" in pool["type"]:
+                t = pool["target"]
+                p = pool
+                parallel_queue[t].append(p)
+
+        # 並列実行ループオブジェクトの取得
+        loop = asyncio.get_event_loop()
+
+        # コマンドプールのターゲット別並列実行
+        done, pending = loop.run_until_complete(self.__parallel_runner(parallel_queue))
+        
+        # 処理結果の取得
+        for d in done:
+            result.append(d.result())
 
         # 各コマンドの実行結果を返す
         return result
@@ -149,6 +229,7 @@ class Command():
                 # コマンドの構築
                 pool = {
                     "type": "file",
+                    "target": connect.host,
                     "run": connect.put,
                     "local": local_path,
                     "remote": remote_path
@@ -168,6 +249,7 @@ class Command():
                     # コマンドの構築
                     pool = {
                         "type": "target",
+                        "target": connect.host,
                         "run": connect.run,
                         "command": command,
                         "rollback": None
@@ -250,6 +332,7 @@ class Command():
                 # コマンドの構築
                 pool = {
                     "type": "file",
+                    "target": connect.host,
                     "run": connect.put,
                     "local": local_path,
                     "remote": remote_path
@@ -268,6 +351,7 @@ class Command():
                 # コマンドの構築
                 pool = {
                     "type": "target",
+                    "target": connect.host,
                     "run": connect.run,
                     "command": command,
                     "rollback": None
@@ -500,6 +584,7 @@ class Command():
                 for c in command:
                     pool = {
                         "type": "target",
+                        "target": connect.host,
                         "run": connect.run,
                         "command": c,
                         "rollback": None,
@@ -513,6 +598,7 @@ class Command():
                 for r in rollback:
                     pool = {
                         "type": "target",
+                        "target": connect.host,
                         "run": connect.run,
                         "command": None,
                         "rollback": r,
