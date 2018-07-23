@@ -24,11 +24,12 @@ pyinstaller --onefile dolphin.py
 
 # 実行
 ```sh
-python dolphin playbook.toml [.. playbooks.toml] [--no-enter] [--parallel] [--rollback | --failback]
+python dolphin playbook.toml [.. playbooks.toml] [--display] [--no-enter] [--parallel] [--rollback | --failback]
 ```
 
 
 ## オプションの説明
+--display: 各コマンドの実行結果を JSON 形式で表示  
 --no-enter: プログラム実行後のキー入力待ちを無効化する  
 --parallel: 各 target へのコマンド発行を並列化する  
 --rollback: TOML に記述された command の代わりに rollback を実行する  

@@ -15,6 +15,9 @@ def arg():
     parser.add_argument("-p", "--parallel",
                         help="parallel run (default is sequential)",
                         action="store_true")
+    parser.add_argument("--display",
+                        help="display result to run command",
+                        action="store_true")
     parser.add_argument("--no-enter",
                         help="exit without input Enter key", action="store_true")
     group = parser.add_mutually_exclusive_group()
@@ -85,17 +88,43 @@ def command_run_parallel(command, args):
     構築したコマンドを並列実行する
     """
 
-    result = []
+    result = {}
 
     for c in command:
         if not args.rollback:
-            result.append(c.parallel_run())
+            result[c.name] = c.parallel_run()
             if args.failback:
                 c.failback()
         else:
-            result.append(c.parallel_rollback())
+            result[c.name] = c.parallel_rollback()
 
     return result
+
+
+def display_result(result):
+    """
+    コマンド実行結果を JSON 形式で表示する
+    """
+
+    import json
+    import fabric
+
+    data = result.copy()
+
+    # Result・Error オブジェクトを Exitcode に直す
+    for filename, results in result.items():
+        for index, res in enumerate(results):
+            for k, v in res.items():
+                if type(v) == fabric.runners.Result:
+                    data[filename][index][k] = v.command + ": Success"
+                else:
+                    data[filename][index][k] = v.result.command + ": Error"
+
+    # Python dict 形式から JSON 形式に変換する
+    data = json.dumps(data, indent=4, separators=(',', ': '))
+
+    # 表示
+    print(data)
 
 
 def main():
@@ -114,12 +143,17 @@ def main():
 
     # 構築したコマンドの実行
     try:
+        result = None
         if args.parallel:
             # コマンドの並列実行
-            command_run_parallel(command, args)
+            result = command_run_parallel(command, args)
         else:
             # コマンドの逐次実行
-            command_run(command, args)
+            result = command_run(command, args)
+
+        # コマンドの実行結果の表示
+        if args.display:
+            display_result(result)
     except Exception as e:
         # エラーを赤文字で表示する
         print("\033[31m" + str(e) + "\033[0m")
