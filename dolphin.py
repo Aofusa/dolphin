@@ -64,21 +64,20 @@ def command_run(command, args):
     構築したコマンドを実行する
     """
 
-    result = []
+    result = {}
 
     for c in command:
         if not args.rollback:
             try:
-                result.append(c.run())
+                result[c.name] = c.run()
             except Exception as e:
                 print("[{}] \033[31m".format(c.name) + str(e) + "\033[0m")
+                result[c.name] = c.get_result()
                 if args.failback:
                     print("[{}] failback now...".format(c.name))
                     c.rollback()
-                # else:
-                #     raise Exception(e)
         else:
-            result.append(c.rollback())
+            result[c.name] = c.rollback()
 
     return result
 

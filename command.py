@@ -30,10 +30,19 @@ class Command():
         self.generate_command_pool()
 
 
+    def get_result(self):
+        """
+        コマンドの実行結果を返します
+        """
+        return self.__command_result
+
+
     def run(self):
         """
         構築したコマンドの実行
         """
+
+        import invoke
 
         # コマンドプールが空だった場合
         # 空の配列を返す
@@ -42,25 +51,29 @@ class Command():
 
         # 構築したコマンドの実行
         for pool in self.__command_pool:
-            if "target" in pool["type"]:
-                command = pool["run"]
-                arg = pool["command"]
-                # command が存在すれば実行する
-                if arg != None:
+            try:
+                if "target" in pool["type"]:
+                    command = pool["run"]
+                    arg = pool["command"]
+                    # command が存在すれば実行する
+                    if arg != None:
+                        host = pool["target"]
+                        result = command(arg, pty=True)
+                        self.__command_result.append({host: result})
+
+                elif "proxy" in pool["type"]:
+                    pass
+
+                elif "file" in pool["type"]:
+                    command = pool["run"]
+                    local_file = pool["local"]
+                    remote_file = pool["remote"]
                     host = pool["target"]
-                    result = command(arg, pty=True)
+                    result = command(local_file, remote_file)
                     self.__command_result.append({host: result})
-
-            elif "proxy" in pool["type"]:
-                pass
-
-            elif "file" in pool["type"]:
-                command = pool["run"]
-                local_file = pool["local"]
-                remote_file = pool["remote"]
-                host = pool["target"]
-                result = command(local_file, remote_file)
-                self.__command_result.append({host: result})
+            except invoke.exceptions.UnexpectedExit as e:
+                self.__command_result.append({pool["target"]: e})
+                raise e
 
         # 各コマンドの実行結果を返す
         return self.__command_result
