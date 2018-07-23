@@ -134,7 +134,10 @@ class Command():
             # 送信先のパスがファイルでなかった場合、末尾に送信ファイル名を追加する
             # fabric のファイル送信の仕様
             if Path(remote_path).name != Path(local_path).name:
-                remote_path = str(Path(remote_path) / Path(local_path).name)
+                remote_path = Path(remote_path) / Path(local_path).name
+                
+            # 送信先のパスを PosixPath に変換する
+            remote_path = Path(remote_path).as_posix()
 
             # ターゲットリストの一覧全てに転送する
             for target in self.__target_list:
@@ -154,7 +157,7 @@ class Command():
                 # ディレクトリが指定された場合、送信先で解凍する
                 if dir_flag == True:
                     connect = target["target"]
-                    remote_dir = Path(remote_path).parent
+                    remote_dir = Path(remote_path).parent.as_posix()
                     remote_file = Path(remote_path).name
                     command = "cd {} && tar -xf {} && rm -rf {}".format(
                         remote_dir, remote_file, remote_file)
