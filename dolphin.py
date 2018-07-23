@@ -89,17 +89,11 @@ def command_run_parallel(command, args):
 
     for c in command:
         if not args.rollback:
-            try:
-                result.append(c.parallel_run())
-            except Exception as e:
-                print("[{}] \033[31m".format(c.name) + str(e) + "\033[0m")
-                if args.failback:
-                    print("[{}] failback now...".format(c.name))
-                    c.rollback()
-                # else:
-                #     raise Exception(e)
+            result.append(c.parallel_run())
+            if args.failback:
+                c.failback()
         else:
-            result.append(c.rollback())
+            result.append(c.parallel_rollback())
 
     return result
 

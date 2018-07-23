@@ -1,5 +1,6 @@
 
 
+import fabric
 from fabric import Connection
 from fabric.transfer import Transfer
 from git import Repo
@@ -21,6 +22,7 @@ class Command():
         Command クラス コンストラクタ
         """
         self.__command_pool = []  # 構築したコマンドプールの保存
+        self.__command_result = [] # コマンドプールの実行結果
         self.__target_list = []   # ターゲットの一覧
         self.__worker_dir = tempfile.TemporaryDirectory() # 作業用一時ディレクトリ
         self.name = name
@@ -33,12 +35,10 @@ class Command():
         構築したコマンドの実行
         """
 
-        result = []
-
         # コマンドプールが空だった場合
         # 空の配列を返す
         if len(self.__command_pool) <= 0:
-            return result
+            return []
 
         # 構築したコマンドの実行
         for pool in self.__command_pool:
@@ -47,7 +47,9 @@ class Command():
                 arg = pool["command"]
                 # command が存在すれば実行する
                 if arg != None:
-                    result.append(command(arg, pty=True))
+                    host = pool["target"]
+                    result = command(arg, pty=True)
+                    self.__command_result.append({host: result})
 
             elif "proxy" in pool["type"]:
                 pass
@@ -56,10 +58,12 @@ class Command():
                 command = pool["run"]
                 local_file = pool["local"]
                 remote_file = pool["remote"]
-                result.append(command(local_file, remote_file))
+                host = pool["target"]
+                result = command(local_file, remote_file)
+                self.__command_result.append({host: result})
 
         # 各コマンドの実行結果を返す
-        return result
+        return self.__command_result
 
 
     def __parallel_command_runner(self, command_result, command_pool):
@@ -87,12 +91,10 @@ class Command():
         構築したコマンドの並列実行
         """
 
-        result = []
-
         # コマンドプールが空だった場合
         # 空の配列を返す
         if len(self.__command_pool) <= 0:
-            return result
+            return []
 
         # ターゲットリストの数だけキューを作成する
         parallel_queue = {}
@@ -100,7 +102,8 @@ class Command():
             host = target["target"].host
             parallel_queue[host] = {
                 "command_pool": [],
-                "result": []
+                "result": [],
+                "error": None
             }
 
         # 構築したコマンドをキューに入れていく
@@ -111,32 +114,74 @@ class Command():
 
         # コマンドプールのターゲット別並列実行
         with ThreadPoolExecutor(max_workers=None) as executor:
-            for queue in parallel_queue.values():
-                executor.submit(
-                    self.__parallel_command_runner,
-                    queue["result"],
-                    queue["command_pool"]
-                )
+            future_runner = {}
+            for host, queue in parallel_queue.items():
+                exc = executor.submit(
+                        self.__parallel_command_runner,
+                        queue["result"],
+                        queue["command_pool"]
+                    )
+                future_runner[host] = exc
+            for k, v in future_runner.items():
+                parallel_queue[k]["error"] = v.exception()
 
         # 各スレッドの実行結果を集約
-        for queue in parallel_queue.values():
-            result.append(queue["result"])
+        for host, queue in parallel_queue.items():
+            if queue["error"] == None:
+                for result in queue["result"]:
+                    self.__command_result.append({host: result})
+            else:
+                self.__command_result.append({host: queue["error"]})
+
+        # 各コマンドの実行結果を返す
+        return self.__command_result
+
+    
+    def failback(self):
+        """
+         command の実行に失敗したターゲットマシンに対し rollback を実行する
+        """
+
+        result = []
+
+        # コマンドの実行結果が空だった場合
+        # 空の配列を返す
+        if len(self.__command_result) <= 0:
+            return result
+
+        failed = []
+
+        # command の実行に失敗したターゲットマシンの列挙
+        for res in self.__command_result:
+            for k, v in res.items():
+                if type(v) != fabric.runners.Result:
+                    failed.append(k)
+        
+        # failed に対し rollback コマンドの実行
+        for pool in self.__command_pool:
+            if "target" in pool["type"]:
+                if pool["target"] in failed:
+                    command = pool["run"]
+                    arg = pool["rollback"]
+                    # rollback が存在すれば実行する
+                    if arg != None:
+                        host = pool["target"]
+                        r = command(arg, pty=True)
+                        result.append({host: r})
 
         # 各コマンドの実行結果を返す
         return result
 
-    
+
     def rollback(self):
         """
         構築した rollback コマンドの実行
         """
 
-        result = []
-
         # コマンドプールが空だった場合
         # 空の配列を返す
         if len(self.__command_pool) <= 0:
-            return result
+            return []
 
         # 構築したコマンドの実行
         for pool in self.__command_pool:
@@ -145,10 +190,77 @@ class Command():
                 arg = pool["rollback"]
                 # rollback が存在すれば実行する
                 if arg != None:
-                    result.append(command(arg, pty=True))
+                    host = pool["target"]
+                    result = command(arg, pty=True)
+                    self.__command_result.append({host: result})
 
         # 各コマンドの実行結果を返す
-        return result
+        return self.__command_result
+
+
+    def __parallel_rollback_runner(self, command_result, command_pool):
+        """
+         rollback コマンドを逐次実行するためのコマンドランナー
+        """
+
+        for pool in command_pool:
+            if "target" in pool["type"]:
+                command = pool["run"]
+                arg = pool["rollback"]
+                # rollback が存在すれば実行する
+                if arg != None:
+                    command_result.append(command(arg, pty=True))
+
+
+    def parallel_rollback(self):
+        """
+        構築した rollback コマンドの実行
+        """
+
+        # コマンドプールが空だった場合
+        # 空の配列を返す
+        if len(self.__command_pool) <= 0:
+            return []
+
+        # ターゲットリストの数だけキューを作成する
+        parallel_queue = {}
+        for target in self.__target_list:
+            host = target["target"].host
+            parallel_queue[host] = {
+                "command_pool": [],
+                "result": [],
+                "error": None
+            }
+
+        # 構築したコマンドをキューに入れていく
+        for pool in self.__command_pool:
+            if "target" in pool["type"]:
+                t = pool["target"]
+                parallel_queue[t]["command_pool"].append(pool)
+
+        # コマンドプールのターゲット別並列実行
+        with ThreadPoolExecutor(max_workers=None) as executor:
+            future_runner = {}
+            for host, queue in parallel_queue.items():
+                exc = executor.submit(
+                        self.__parallel_rollback_runner,
+                        queue["result"],
+                        queue["command_pool"]
+                    )
+                future_runner[host] = exc
+            for k, v in future_runner.items():
+                parallel_queue[k]["error"] = v.exception()
+
+        # 各スレッドの実行結果を集約
+        for host, queue in parallel_queue.items():
+            if queue["error"] == None:
+                for result in queue["result"]:
+                    self.__command_result.append({host: result})
+            else:
+                self.__command_result.append({host: queue["error"]})
+
+        # コマンドプールの実行結果を返す
+        return self.__command_result
 
 
     def generate_command_pool(self):
