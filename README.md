@@ -15,6 +15,13 @@ pip install -r requirements.txt
 ```
 
 
+# ビルド
+```sh
+# dist 配下を配布する
+pyinstaller --onefile dolphin.py
+```
+
+
 # 実行
 ```sh
 python dolphin playbook.toml [.. playbooks.toml] [--no-enter] [--rollback | --failback]
