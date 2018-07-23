@@ -5,10 +5,10 @@ from fabric.transfer import Transfer
 from git import Repo
 from pathlib import Path
 from getpass import getpass
+from concurrent.futures import ThreadPoolExecutor
 import paramiko
 import shutil
 import tempfile
-import asyncio
 
 
 class Command():
@@ -62,44 +62,24 @@ class Command():
         return result
 
 
-    async def __parallel_command_runner(self, command_pool):
+    def __parallel_command_runner(self, command_result, command_pool):
         """
         コマンドを逐次実行するためのコマンドランナー
         """
 
-        result = []
-
         for pool in command_pool:
-            await asyncio.sleep(0)
             if "target" in pool["type"]:
                 command = pool["run"]
                 arg = pool["command"]
                 # command が存在すれば実行する
                 if arg != None:
-                    result.append(command(arg, pty=True))
+                    command_result.append(command(arg, pty=True))
 
             elif "file" in pool["type"]:
                 command = pool["run"]
                 local_file = pool["local"]
                 remote_file = pool["remote"]
-                result.append(command(local_file, remote_file))
-
-        return result
-
-
-    async def __parallel_runner(self, queue):
-        """
-        並列実行ランナー
-        """
-
-        cors = []
-
-        for command_pool in queue.values():
-            cors.append(self.__parallel_command_runner(command_pool))
-
-        result = await asyncio.wait(cors)
-
-        return result
+                command_result.append(command(local_file, remote_file))
 
 
     def parallel_run(self):
@@ -118,24 +98,29 @@ class Command():
         parallel_queue = {}
         for target in self.__target_list:
             host = target["target"].host
-            parallel_queue[host] = []
+            parallel_queue[host] = {
+                "command_pool": [],
+                "result": []
+            }
 
         # 構築したコマンドをキューに入れていく
         for pool in self.__command_pool:
             if "target" in pool["type"] or "file" in pool["type"]:
                 t = pool["target"]
-                p = pool
-                parallel_queue[t].append(p)
-
-        # 並列実行ループオブジェクトの取得
-        loop = asyncio.get_event_loop()
+                parallel_queue[t]["command_pool"].append(pool)
 
         # コマンドプールのターゲット別並列実行
-        done, pending = loop.run_until_complete(self.__parallel_runner(parallel_queue))
-        
-        # 処理結果の取得
-        for d in done:
-            result.append(d.result())
+        with ThreadPoolExecutor(max_workers=None) as executor:
+            for queue in parallel_queue.values():
+                executor.submit(
+                    self.__parallel_command_runner,
+                    queue["result"],
+                    queue["command_pool"]
+                )
+
+        # 各スレッドの実行結果を集約
+        for queue in parallel_queue.values():
+            result.append(queue["result"])
 
         # 各コマンドの実行結果を返す
         return result
