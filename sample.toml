@@ -14,6 +14,16 @@ to   = "/path/to/destination"
 path = "path/to/other_file"
 to   = "/path/to/other_destination"
 
+# dolphin 実行マシンから見える Git リポジトリ
+# path: Git リポジトリのURL
+# to: リモートの転送先パス
+# branch: Git リポジトリのブランチ ※省略した場合 master になります。
+[[repo]]
+path = "path/to/repository.git"
+to   = "/path/to/destination"
+branch = "master"
+
+
 # dolphin 実行マシンから target までの経路となる踏み台マシン
 # 複数指定された場合、上から順番に多段 SSH を実施します。
 # host: 踏み台のアドレス

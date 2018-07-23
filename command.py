@@ -2,6 +2,7 @@
 
 from fabric import Connection
 from fabric.transfer import Transfer
+from git import Repo
 from pathlib import Path
 from getpass import getpass
 import paramiko
@@ -95,6 +96,8 @@ class Command():
         self.__generate_target_list()
         # ファイルの転送準備
         self.__generate_file_command()
+        # リポジトリの転送準備
+        self.__generate_repo_command()
         # ターゲットコマンドの構築
         self.__generate_target_command()
 
@@ -172,6 +175,106 @@ class Command():
 
                     # コマンドプールへの積み込み
                     self.__command_pool.append(pool)
+
+
+    def __generate_repo_command(self):
+        """
+        repo キーワードの解釈・コマンドのジェネレーター
+        """
+        
+        # repo キーワードがなかった場合
+        # またはターゲットリストが空だった場合
+        # 何もせずに終了する
+        if (not "repo" in self.data) or len(self.__target_list) <= 0:
+            return
+
+        repos = self.data["repo"]
+
+        # リポジトリ転送コマンドを構築する
+        for repo in repos:
+            # リポジトリのパス
+            repo_path = repo["path"]
+
+            # 転送先リモートパス
+            remote_path = repo["to"]
+
+            # TODO: Subversion 対応
+            # リポジトリのタイプ(Git or Subversion)
+            repo_type = None
+            with Path(repo_path) as p:
+                if ".git" in p.suffix or "git@" in p.parts[0]:
+                    repo_type = "git"
+                else:
+                    repo_type = "svn"
+            if "type" in repo:
+                repo_type = repo["type"]
+
+            # リポジトリのブランチ
+            branch = "master"
+            if "branch" in repo:
+                repo_branch = repo["branch"]
+
+            # リポジトリのクローン
+            # リポジトリ名のディレクトリを一時ディレクトリに作成しそこに clone する
+            cloned = Repo.clone_from(repo_path,
+                Path(self.__worker_dir.name).joinpath(
+                        Path(repo_path).name[:-len(Path(repo_path).suffix)]
+                    ),
+                branch=branch)
+            
+            # リポジトリのパスの取得
+            local_path = cloned.working_dir
+
+            # プログラムで圧縮しファイルにする
+            output = Path(self.__worker_dir.name).joinpath(Path(local_path).name)
+            root_dir = Path(local_path).joinpath("..")
+            base_dir = Path(local_path).name
+            local_path = shutil.make_archive(output,
+                                            "tar",
+                                            root_dir=root_dir,
+                                            base_dir=base_dir
+                                            )
+
+            # 送信先のパスがファイルでなかった場合、末尾に送信ファイル名を追加する
+            # fabric のファイル送信の仕様
+            if Path(remote_path).name != Path(local_path).name:
+                remote_path = Path(remote_path) / Path(local_path).name
+                
+            # 送信先のパスを PosixPath に変換する
+            remote_path = Path(remote_path).as_posix()
+
+            # ターゲットリストの一覧全てに転送する
+            for target in self.__target_list:
+                connect = Transfer(target["target"])
+
+                # コマンドの構築
+                pool = {
+                    "type": "file",
+                    "run": connect.put,
+                    "local": local_path,
+                    "remote": remote_path
+                }
+
+                # コマンドプールへの積み込み
+                self.__command_pool.append(pool)
+
+                # 送信先で解凍する
+                connect = target["target"]
+                remote_dir = Path(remote_path).parent.as_posix()
+                remote_file = Path(remote_path).name
+                command = "cd {} && tar -xf {} && rm -rf {}".format(
+                    remote_dir, remote_file, remote_file)
+
+                # コマンドの構築
+                pool = {
+                    "type": "target",
+                    "run": connect.run,
+                    "command": command,
+                    "rollback": None
+                }
+
+                # コマンドプールへの積み込み
+                self.__command_pool.append(pool)
 
 
     def __generate_proxy_command(self):
