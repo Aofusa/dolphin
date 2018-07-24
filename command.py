@@ -379,7 +379,12 @@ class Command():
         if (not "repo" in self.data) or len(self.__target_list) <= 0:
             return
 
-        from git import Repo
+        try:
+            from git import Repo
+        except ImportError as e:
+            import sys
+            print("Please install Git command.", file=sys.stderr)
+            exit(code=1)
 
         repos = self.data["repo"]
 
