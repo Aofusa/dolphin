@@ -33,7 +33,7 @@ class Command():
         """
         コマンドの実行結果を返します
         """
-        return self.__command_result
+        return self.__command_result.copy()
 
 
     def run(self):
@@ -75,7 +75,7 @@ class Command():
                 raise e
 
         # 各コマンドの実行結果を返す
-        return self.__command_result
+        return self.__command_result.copy()
 
 
     def __parallel_command_runner(self, command_result, command_pool):
@@ -146,7 +146,7 @@ class Command():
                 self.__command_result.append({host: queue["error"]})
 
         # 各コマンドの実行結果を返す
-        return self.__command_result
+        return self.__command_result.copy()
 
     
     def failback(self):
@@ -207,7 +207,7 @@ class Command():
                     self.__command_result.append({host: result})
 
         # 各コマンドの実行結果を返す
-        return self.__command_result
+        return self.__command_result.copy()
 
 
     def __parallel_rollback_runner(self, command_result, command_pool):
@@ -272,7 +272,7 @@ class Command():
                 self.__command_result.append({host: queue["error"]})
 
         # コマンドプールの実行結果を返す
-        return self.__command_result
+        return self.__command_result.copy()
 
 
     def generate_command_pool(self):
