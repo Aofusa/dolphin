@@ -139,11 +139,9 @@ class Command():
 
         # 各スレッドの実行結果を集約
         for host, queue in parallel_queue.items():
-            if queue["error"] == None:
-                for result in queue["result"]:
-                    self.__command_result.append({host: result})
-            else:
-                self.__command_result.append({host: queue["error"]})
+            for result in queue["result"]:
+                self.__command_result.append({host: result})
+            self.__command_result.append({host: queue["error"]})
 
         # 各コマンドの実行結果を返す
         return self.__command_result.copy()
