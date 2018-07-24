@@ -108,16 +108,34 @@ def display_result(result):
     import json
     import fabric
 
-    data = result.copy()
+    data = {}
 
-    # Result・Error オブジェクトを Exitcode に直す
+    # コマンドの実行結果を整形する
     for filename, results in result.items():
-        for index, res in enumerate(results):
+        data[filename] = []
+        # 各コマンドの実行結果
+        for res in results:
+            # ホストネームと実行結果
             for k, v in res.items():
+                command = None
+                status = None
+                # 実行結果が成功か失敗か判別する
                 if type(v) == fabric.runners.Result:
-                    data[filename][index][k] = v.command + ": Success"
+                    command = v.command
+                    status = "Success"
                 else:
-                    data[filename][index][k] = v.result.command + ": Error"
+                    command = v.result.command
+                    status = "Failed"
+
+                # クエリの作成
+                query = {
+                    "host": k,
+                    "command": command,
+                    "status": status
+                }
+
+                # クエリを積み込んで行く
+                data[filename].append(query)
 
     # Python dict 形式から JSON 形式に変換する
     data = json.dumps(data, indent=4, separators=(',', ': '))
