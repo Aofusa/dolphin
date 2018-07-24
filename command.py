@@ -339,7 +339,7 @@ class Command():
                 # コマンドの構築
                 pool = {
                     "type": "file",
-                    "target": connect.host,
+                    "target": target["target"].host,
                     "run": connect.put,
                     "local": local_path,
                     "remote": remote_path
@@ -359,7 +359,7 @@ class Command():
                     # コマンドの構築
                     pool = {
                         "type": "target",
-                        "target": connect.host,
+                        "target": target["target"].host,
                         "run": connect.run,
                         "command": command,
                         "rollback": None
@@ -442,7 +442,7 @@ class Command():
                 # コマンドの構築
                 pool = {
                     "type": "file",
-                    "target": connect.host,
+                    "target": target["target"].host,
                     "run": connect.put,
                     "local": local_path,
                     "remote": remote_path
@@ -461,7 +461,7 @@ class Command():
                 # コマンドの構築
                 pool = {
                     "type": "target",
-                    "target": connect.host,
+                    "target": target["target"].host,
                     "run": connect.run,
                     "command": command,
                     "rollback": None
