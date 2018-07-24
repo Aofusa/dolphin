@@ -3,7 +3,6 @@
 import fabric
 from fabric import Connection
 from fabric.transfer import Transfer
-from git import Repo
 from pathlib import Path
 from getpass import getpass
 from concurrent.futures import ThreadPoolExecutor
@@ -379,6 +378,8 @@ class Command():
         # 何もせずに終了する
         if (not "repo" in self.data) or len(self.__target_list) <= 0:
             return
+
+        from git import Repo
 
         repos = self.data["repo"]
 
