@@ -11,7 +11,9 @@ def arg():
     import argparse
 
     parser = argparse.ArgumentParser(description="Dolphin - A Deploy-tool")
-    parser.add_argument('file', help="dolphin config toml file", nargs="+")
+    parser.add_argument("file", help="dolphin config toml file", nargs="+")
+    parser.add_argument("-e", "--env",
+                        help="set environment value (key:value)", nargs="+")
     parser.add_argument("-p", "--parallel",
                         help="parallel run (default is sequential)",
                         action="store_true")
@@ -30,17 +32,19 @@ def arg():
     return args
 
 
-def load_toml(files):
+def load_toml(files, value):
     """
     TOML ファイルを読み込み dict 形式に変換する
     """
     import toml
+    from preprocessor import Preprocessor
 
     result = {}
 
     for filepath in files:
         file_data = open(filepath, "r", encoding="utf-8")
-        toml_data = toml.load(file_data)
+        prep_data = Preprocessor(file_data, value).preprocess()
+        toml_data = toml.load(prep_data)
         result[filepath] = toml_data
 
     return result
@@ -158,7 +162,7 @@ def main():
     args = arg()
 
     # TOML ファイルのロード
-    data = load_toml(args.file)
+    data = load_toml(args.file, args.env)
 
     # TOML の情報からコマンドの構築
     command = command_generate(data)
