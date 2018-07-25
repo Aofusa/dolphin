@@ -117,6 +117,8 @@ def display_result(result):
         for res in results:
             # ホストネームと実行結果
             for k, v in res.items():
+                if v == None:
+                    continue
                 command = None
                 status = None
                 # 実行結果が成功か失敗か判別する
