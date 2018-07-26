@@ -125,6 +125,9 @@ def display_result(result):
                 if type(v) == fabric.runners.Result:
                     command = v.command
                     status = "Success"
+                elif type(v) == fabric.transfer.Result:
+                    command = "file transfer {} to {}".format(v.orig_local, v.remote)
+                    status = "Success"
                 else:
                     command = v.result.command
                     status = "Failed"
