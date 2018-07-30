@@ -45,7 +45,6 @@ def load_toml(files, value):
         try:
             file_data = open(filepath, "r", encoding="utf-8")
             prep_data = Preprocessor(file_data, value).preprocess()
-            print(prep_data)
             toml_data = toml.loads(prep_data)
             result[filepath] = toml_data
         except AttributeError as e:

@@ -84,7 +84,7 @@ class Preprocessor():
             ?start: symbol*
 
             ?symbol: toml_table
-                    | toml_data
+                    | toml_value
                     | operation
                     | assignment
                     | value
@@ -92,35 +92,31 @@ class Preprocessor():
                     | env
                     | fact
                     | comment
+                    | array_inner
 
             toml_table: "[[" value "]]"
 
-            ?toml_data: toml_value
-                        | toml_array
+            toml_value: fact "=" (value|array)
 
-            toml_value: fact "=" value
-
-            toml_array: fact "=" "[" toml_command* "]"
-
-            ?toml_command: operation
-                            | value ","?
+            array: "[" ((operation|value) ","?)* "]"
+            array_inner: value ","
 
             ?operation: loop
                         | end
 
-            loop: "%for" var "in" value ":"
+            loop: "%for" new_var "in" iterator ":" symbol* end
+            iterator: fact
+                    | var
 
             end: "%end"
 
             ?assignment: assignment_value
-                        | assignment_array
                         | array_assignment_value
                         | array_assignment_array
 
-            assignment_value: new_var "=" value
-            assignment_array: new_var "=" "[" value? ("," value)* "]"
+            assignment_value: new_var "=" (value|array)
             array_assignment_value: new_var_array "=" value
-            array_assignment_array: new_var_array "=" "[" value? ("," value)* "]"
+            array_assignment_array: new_var_array "=" array
 
             ?value: fact
                     | env

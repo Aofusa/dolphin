@@ -55,22 +55,39 @@ class Visitor():
         return left + "=" + str(right) + "\n"
 
 
-    def toml_array(self, tree, env):
-        """
-        TOML 配列構文
-        """
-        left = self.visit(tree.children[0], env)
-        data = left + "=["
-        for index in range(1, len(tree.children)):
-            data = data +str(self.visit(tree.children[index], env)) + ","
-        return data + "]\n"
-
-
     def loop(self, tree, env):
         """
         繰り返し構文
         """
-        pass
+        result = []
+        key = self.visit(tree.children[0], env)
+        iterator = self.visit(tree.children[1], env)
+        if type(iterator) == str:
+            for i in range(0, int(iterator)):
+                env[key] = i
+                for element in tree.children[2:]:
+                    data = self.visit(element, env)
+                    if data != None:
+                        result.append(data)
+        else:
+            for v in iterator:
+                env[key] = v
+                for element in tree.children[2:]:
+                    data = self.visit(element, env)
+                    if data != None:
+                        result.append(data)
+        return "".join(result)
+
+
+    def iterator(self, tree, env):
+        """
+        繰り返し構文の引数
+        """
+        key = tree.data
+        if key == 'fact':
+            return tree.children[0].value
+        else:
+            return self.visit(tree.children[0], env)
 
 
     def end(self, tree, env):
@@ -86,18 +103,6 @@ class Visitor():
         """
         key = self.visit(tree.children[0], env)
         value = self.visit(tree.children[1], env)
-        env[key] = value
-        return
-
-
-    def assignment_array(self, tree, env):
-        """
-        変数に配列を代入
-        """
-        key = self.visit(tree.children[0], env)
-        value = []
-        for index in range(1, len(tree.children)):
-            value.append(self.visit(tree.children[index], env))
         env[key] = value
         return
 
@@ -122,6 +127,23 @@ class Visitor():
             value.append(self.visit(tree.children[index], env))
         env[key][index] = value
         return
+
+
+    def array(self, tree, env):
+        """
+        [] で囲まれた配列キーワード
+        """
+        result = []
+        for element in tree.children:
+            result.append(self.visit(element, env))
+        return result
+
+
+    def array_inner(self, tree, env):
+        """
+        [] で囲まれた配列の内部で宣言する要素キーワード
+        """
+        return self.visit(tree.children[0], env) + ","
 
 
     def new_var(self, tree, env):
