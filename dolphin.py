@@ -42,10 +42,17 @@ def load_toml(files, value):
     result = {}
 
     for filepath in files:
-        file_data = open(filepath, "r", encoding="utf-8")
-        prep_data = Preprocessor(file_data, value).preprocess()
-        toml_data = toml.load(prep_data)
-        result[filepath] = toml_data
+        try:
+            file_data = open(filepath, "r", encoding="utf-8")
+            prep_data = Preprocessor(file_data, value).preprocess()
+            print(prep_data)
+            toml_data = toml.loads(prep_data)
+            result[filepath] = toml_data
+        except AttributeError as e:
+            import sys
+            print(filepath + ": Please set values with using option '-e' \n \
+                example: -e 'key:value'", file=sys.stderr)
+            exit(1)
 
     return result
 

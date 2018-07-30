@@ -1,6 +1,7 @@
 
 
 from lark import Lark
+from visitor import Visitor
 
 
 class Preprocessor():
@@ -25,12 +26,16 @@ class Preprocessor():
         プリプロセッサによるマクロの解釈
         """
 
-        # 字句解析
-        lex = self.__macro_parser.parse(self.__pre_data)
+        result = None
 
-        # 構文解析
+        # 字句・構文解析
+        tree = self.__macro_parser.parse(self.__pre_data)
 
-        pass
+        # 構文を実行し TOML ファイルを生成する
+        result = Visitor(self.__env_map).visit(tree)
+
+        # TOML ファイルを返す
+        return result
 
 
     def __decimating_comment(self, data):
@@ -63,6 +68,7 @@ class Preprocessor():
 
         # 引数で渡された変数を変数名と値に分割する
         li = ":".join(value).split(":")
+
         # 変数名をキー、値をバリューとした dict を作成
         result = dict(zip(li[0::2], li[1::2]))
 
@@ -77,21 +83,24 @@ class Preprocessor():
         rule = r"""
             ?start: symbol*
 
-            ?symbol: fact
-                    | env
-                    | var
-                    | value
+            ?symbol: toml_table
+                    | toml_data
+                    | operation
                     | assignment
-                    | end
-                    | loop
-                    | toml_value
-                    | toml_table
+                    | value
+                    | var
+                    | env
+                    | fact
                     | comment
 
-            ?toml_table: "[[" value "]]"
+            toml_table: "[[" value "]]"
 
-            ?toml_value: fact "=" value
-                        | fact "=" "[" toml_command* "]"
+            ?toml_data: toml_value
+                        | toml_array
+
+            toml_value: fact "=" value
+
+            toml_array: fact "=" "[" toml_command* "]"
 
             ?toml_command: operation
                             | value ","?
@@ -99,29 +108,36 @@ class Preprocessor():
             ?operation: loop
                         | end
 
-            ?loop: "%for" var "in" value ":"
+            loop: "%for" var "in" value ":"
 
-            ?end: "%end"
+            end: "%end"
 
-            ?assignment: var "=" value
-                        | var "=" "[" value? ("," value)* "]"
+            ?assignment: assignment_value
+                        | assignment_array
+
+            assignment_value: new_var "=" value
+
+            assignment_array: new_var "=" "[" value? ("," value)* "]"
                         
             ?value: fact
                     | env
                     | var
 
-            ?var: "@" fact
+            new_var: "@" fact
                     | "@" "{" fact "}"
 
-            ?env: "%" fact
+            var: "@" fact
+                    | "@" "{" fact "}"
+
+            env: "%" fact
                 | "%" "{" fact "}"
 
-            ?fact: STRING
+            fact: STRING
                     | WORD
                     | "'" WORD "'"
                     | NUMBER
 
-            ?comment: "#" symbol
+            comment: "#"+ symbol*
 
             %import common.ESCAPED_STRING   -> STRING
             %import common.SIGNED_NUMBER    -> NUMBER
