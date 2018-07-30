@@ -17,6 +17,9 @@ def arg():
     parser.add_argument("-p", "--parallel",
                         help="parallel run (default is sequential)",
                         action="store_true")
+    parser.add_argument("--compile",
+                        help="compile TOML and not run",
+                        action="store_true")
     parser.add_argument("--display",
                         help="display result to run command",
                         action="store_true")
@@ -169,6 +172,16 @@ def main():
 
     # TOML ファイルのロード
     data = load_toml(args.file, args.env)
+
+    # TOML のコンパイルのみを行い実行しない
+    # コンパイル結果は画面に表示される
+    if args.compile:
+        import toml
+        print(toml.dumps(data))
+        # すぐ終了するのを防ぐためキー入力待ちにする
+        if not args.no_enter:
+            input("終了するにはエンターキーを入力してください")
+        exit(0)
 
     # TOML の情報からコマンドの構築
     command = command_generate(data)
