@@ -199,7 +199,7 @@ host = "10.1.1.20"
 
 
 # TOML 拡張構文
-標準的な TOML では制御構文がないため独自DSLにより拡張した。  
+標準的な TOML では制御構文がないため独自DSLにより拡張している  
 以下の機能が使える  
 
 - 変数  
@@ -240,8 +240,8 @@ python dolphin.py example.toml -e user:hoge port:piyo
 # %key名 で値を取り出すことができる
 [[target]]
 host = "localhost"
-user = %user
-port = %port
+user = %user  # %user = hoge
+port = %port  # %port = piyo
 ```
 
 
