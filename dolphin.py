@@ -177,7 +177,9 @@ def main():
     # コンパイル結果は画面に表示される
     if args.compile:
         import toml
-        print(toml.dumps(data))
+        for k, v in data.items():
+            print("# {}".format(k))
+            print(toml.dumps(v))
         # すぐ終了するのを防ぐためキー入力待ちにする
         if not args.no_enter:
             input("終了するにはエンターキーを入力してください")
