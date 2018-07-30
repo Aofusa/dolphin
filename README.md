@@ -203,13 +203,15 @@ host = "10.1.1.20"
 以下の機能が使える  
 
 - 変数  
-- 配列
+- 配列  
 - 引数による値渡し  
+- 繰り返し処理  
 
 
 変数では任意の値を変数に書き込むことができる  
 配列は変数などの値を複数まとめることができる  
 引数による値渡しでは -e オプションを指定することで任意の値を渡すことができる  
+繰り返し処理では配列の要素の繰り返し、回数指定での繰り返しができる  
 
 
 ## 構文の記述例
@@ -234,6 +236,37 @@ host = @value  # @value = "localhost"
 ```sh
 # 変数 @value を定義し ["username", "pass"] で初期化する
 @value = ["username", "pass"]
+```
+
+```sh
+# 変数を呼び出す
+[[target]]
+user = @value[0]      # @value[0] = "username"
+password = @value[1]  # @value[1] = "pass"
+```
+
+```sh
+# 配列の要素に代入することもできる
+@value[1] = "localhost"  # @value = ["username", "localhost"]
+```
+
+### 繰り返し  
+```sh
+# 配列の要素を繰り返し
+@array = ["localhost", "127.0.0.1"]
+
+%for @value in @array:
+[[target]]
+host = @value   # @value には "localhost", "127.0.0.1" が順に入る
+%end
+```
+
+```sh
+# 指定回数繰り返し
+%for @value in 2:
+[[target]]
+port = @value   # @value には 0, 1 が順に入る
+%end
 ```
 
 ```sh
