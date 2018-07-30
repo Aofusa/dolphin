@@ -198,6 +198,53 @@ host = "10.1.1.20"
 ```
 
 
+# TOML 拡張構文
+標準的な TOML では制御構文がないため独自DSLにより拡張した。  
+以下の機能が使える  
+
+- 変数  
+- 引数による値渡し  
+
+
+変数では任意の値を変数に書き込むことができる  
+引数による値渡しでは -e オプションを指定することで任意の値を渡すことができる  
+
+
+## 構文の記述例
+### 変数  
+```sh
+# 変数 @value を定義し "localhost" で初期化する
+@value = "localhost"
+```
+
+```sh
+# 変数を呼び出す
+[[target]]
+host = @value  # @value = "localhost"
+```
+
+```sh
+# 変数に変数を代入することもできる
+@var = @value  # @var = "localhost"
+```
+
+
+### 引数による値渡し  
+引数の渡し方  
+```sh
+# key:value の形式で渡す
+python dolphin.py example.toml -e user:hoge port:piyo
+```
+
+```sh
+# %key名 で値を取り出すことができる
+[[target]]
+host = "localhost"
+user = %user
+port = %port
+```
+
+
 # 悲しいこと
 - ディレクトリを転送する場合、ターゲットマシン上で tar コマンドが使用できないと失敗する  
 - SSH のログイン方式はパスワード認証と公開鍵認証(RSA・DSS・ECDSA・Ed25519)をサポート  
