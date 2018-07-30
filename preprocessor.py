@@ -114,11 +114,14 @@ class Preprocessor():
 
             ?assignment: assignment_value
                         | assignment_array
+                        | array_assignment_value
+                        | array_assignment_array
 
             assignment_value: new_var "=" value
-
             assignment_array: new_var "=" "[" value? ("," value)* "]"
-                        
+            array_assignment_value: new_var_array "=" value
+            array_assignment_array: new_var_array "=" "[" value? ("," value)* "]"
+
             ?value: fact
                     | env
                     | var
@@ -126,8 +129,17 @@ class Preprocessor():
             new_var: "@" fact
                     | "@" "{" fact "}"
 
-            var: "@" fact
+            new_var_array: "@" fact "[" fact "]"
+                            | "@" "{" fact "}" "[" fact "]"
+
+            ?var: var_value
+                    | var_array
+
+            var_value: "@" fact
                     | "@" "{" fact "}"
+
+            var_array: "@" fact "[" fact "]"
+                    | "@" "{" fact "}" "[" fact "]"
 
             env: "%" fact
                 | "%" "{" fact "}"

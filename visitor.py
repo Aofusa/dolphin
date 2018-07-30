@@ -102,6 +102,28 @@ class Visitor():
         return
 
 
+    def array_assignment_value(self, tree, env):
+        """
+        配列の要素に再代入
+        """
+        (key, index) = self.visit(tree.children[0], env)
+        value = self.visit(tree.children[1], env)
+        env[key][index] = value
+        return
+
+
+    def array_assignment_array(self, tree, env):
+        """
+        配列の要素に配列を再代入
+        """
+        (key, index) = self.visit(tree.children[0], env)
+        value = []
+        for index in range(1, len(tree.children)):
+            value.append(self.visit(tree.children[index], env))
+        env[key][index] = value
+        return
+
+
     def new_var(self, tree, env):
         """
         変数定義
@@ -109,11 +131,27 @@ class Visitor():
         return self.visit(tree.children[0], env)
 
 
-    def var(self, tree, env):
+    def new_var_array(self, tree, env):
+        """
+        配列の要素の定義
+        """
+        name = self.visit(tree.children[0], env)
+        index = self.visit(tree.children[1], env)
+        return (name, int(index))
+
+
+    def var_value(self, tree, env):
         """
         変数の呼び出し
         """
         return env[self.visit(tree.children[0], env)]
+
+
+    def var_array(self, tree, env):
+        """
+        配列の要素の呼び出し
+        """
+        return env[self.visit(tree.children[0], env)][int(self.visit(tree.children[1], env))]
 
 
     def env(self, tree, env):
