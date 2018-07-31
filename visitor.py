@@ -78,8 +78,6 @@ class Visitor():
                     data = self.visit(element, env)
                     if data != None:
                         result.append(data)
-        print(result)
-        print("".join(result))
         return "".join(result)
 
 
