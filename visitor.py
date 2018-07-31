@@ -52,7 +52,9 @@ class Visitor():
         """
         left = self.visit(tree.children[0], env)
         right = self.visit(tree.children[1], env)
-        return left + "=" + str(right) + "\n"
+        if type(right) == list:
+            right = "[" + ",".join(right) + "]"
+        return left + "=" + right + "\n"
 
 
     def loop(self, tree, env):
@@ -76,6 +78,8 @@ class Visitor():
                     data = self.visit(element, env)
                     if data != None:
                         result.append(data)
+        print(result)
+        print("".join(result))
         return "".join(result)
 
 
